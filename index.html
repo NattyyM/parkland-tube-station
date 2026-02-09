@@ -1072,6 +1072,70 @@ function resetScore() {
     tst('Score reset!');
 }
 
+// === PNEUMATIC TUBE WHOOSH SOUND (Web Audio API) ===
+var audioCtx = null;
+function playTubeWhoosh() {
+    try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var ctx = audioCtx;
+        var now = ctx.currentTime;
+        var duration = 0.45;
+
+        // White noise source (air rushing)
+        var bufferSize = ctx.sampleRate * duration;
+        var noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        var data = noiseBuffer.getChannelData(0);
+        for (var i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+        var noise = ctx.createBufferSource();
+        noise.buffer = noiseBuffer;
+
+        // Bandpass filter — sweeps from low to high (tube suction effect)
+        var bandpass = ctx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.Q.value = 1.5;
+        bandpass.frequency.setValueAtTime(300, now);
+        bandpass.frequency.exponentialRampToValueAtTime(3500, now + duration * 0.3);
+        bandpass.frequency.exponentialRampToValueAtTime(800, now + duration);
+
+        // Highpass for the airy whistle
+        var highpass = ctx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.setValueAtTime(200, now);
+        highpass.frequency.linearRampToValueAtTime(600, now + duration);
+
+        // Volume envelope — quick attack, sustained, fade
+        var gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.18, now + 0.03);
+        gain.gain.setValueAtTime(0.18, now + duration * 0.4);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        // Subtle low tone (tube resonance)
+        var osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + duration);
+        var oscGain = ctx.createGain();
+        oscGain.gain.setValueAtTime(0.04, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        // Connect: noise → bandpass → highpass → gain → output
+        noise.connect(bandpass);
+        bandpass.connect(highpass);
+        highpass.connect(gain);
+        gain.connect(ctx.destination);
+
+        // Connect: osc → oscGain → output
+        osc.connect(oscGain);
+        oscGain.connect(ctx.destination);
+
+        noise.start(now);
+        noise.stop(now + duration);
+        osc.start(now);
+        osc.stop(now + duration);
+    } catch(e) {}
+}
+
 // === INIT TUBE GAME ===
 function initTubeGame() {
     document.querySelectorAll('.carrier').forEach(function(tube) {
@@ -1100,8 +1164,9 @@ function catchTube(tube, x, y) {
     void hud.offsetWidth;
     hud.classList.add('bump');
 
-    // Warp speed on tube
+    // Warp speed on tube + whoosh sound
     tube.classList.add('warp-speed');
+    playTubeWhoosh();
     setTimeout(function() { tube.classList.remove('warp-speed'); }, 2000);
 
     // Explosion
