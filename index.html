@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parkland Health Tube Station</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ========== THEME VARS ========== */
+body{font-family:'Manrope',system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;transition:background .4s,color .4s;overflow-x: hidden;}
+body.dark{--bg:#0d1026;--bg2:#141836;--card:rgba(22,28,60,.85);--card2:rgba(30,38,80,.7);--border:rgba(120,130,255,.1);--t1:#eef0ff;--t2:#a0a8cc;--t3:#606890;--th:#8b8eff;--glow:rgba(120,100,255,.12);--row-hover:rgba(120,130,255,.08);--stripe:rgba(255,255,255,.02);--input-bg:rgba(255,255,255,.04);color:#eef0ff;background:#0d1026}
+body.light{--bg:#f0f2f7;--bg2:#e8eaf2;--card:rgba(255,255,255,.85);--card2:rgba(255,255,255,.7);--border:rgba(100,80,200,.1);--t1:#1e293b;--t2:#475569;--t3:#94a3b8;--th:#4f46e5;--glow:rgba(100,80,200,.06);--row-hover:rgba(100,80,200,.05);--stripe:rgba(0,0,0,.015);--input-bg:rgba(0,0,0,.03);color:#1e293b;background:#f0f2f7}
+
+/* ========== BG ========== */
+.bg-mesh{position:fixed;inset:0;z-index:0;overflow:hidden}
+.bg-mesh .orb{position:absolute;border-radius:50%;filter:blur(140px);opacity:.4;transition:opacity .5s}
+body.dark .bg-mesh .orb{opacity:.4}body.light .bg-mesh .orb{opacity:.25}
+.orb-1{width:700px;height:700px;background:rgba(100,80,255,.15);top:-15%;left:-10%;animation:od 40s ease-in-out infinite}
+.orb-2{width:500px;height:500px;background:rgba(0,200,180,.1);bottom:-10%;right:-5%;animation:od 32s ease-in-out infinite reverse}
+@keyframes od{0%,100%{transform:translate(0,0)}50%{transform:translate(60px,-40px)}}
+
+/* PADDING ADDED HERE TO MOVE PAGE DOWN */
+.shell{
+    position:relative;
+    z-index:10; /* Ensures content sits ABOVE the animation */
+    max-width:1440px;
+    margin:0 auto;
+    padding:16px 20px;
+    padding-top: 20px; 
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+    gap:10px
+}
+
+/* ========== REALISTIC TUBE ANIMATION ========== */
+/* Z-Index 0 ensures it is BEHIND the shell content */
+.page-border { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+
+.carrier {
+    position: absolute; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.4) 100%);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3), inset 0 0 5px rgba(255,255,255,0.8);
+    border: 1px solid rgba(255,255,255,0.6);
+    background-image: linear-gradient(90deg, transparent 15%, #0044ff 15%, #0044ff 25%, transparent 25%, transparent 75%, #0044ff 75%, #0044ff 85%, transparent 85%);
+    pointer-events: auto; /* Allow clicking on the tubes */
+    cursor: pointer; /* Show pointer hand */
+    transition: filter 0.2s, transform 0.2s; /* Smooth visual change */
+}
+.carrier::after { content: ''; position: absolute; background: #fbbf24; border: 1px solid #d97706; border-radius: 1px; opacity: 0.9; }
+
+/* WARP SPEED CLASS (Applied via JS on click) */
+.carrier.warp-speed {
+    animation-duration: 2s !important; /* 5x Faster */
+    filter: brightness(1.5) drop-shadow(0 0 10px rgba(255,255,255,0.8)); /* Glow effect */
+    z-index: 100; /* Pop to front when clicked */
+    transform: scale(1.1); /* Slight zoom */
+}
+
+/* ========== TUBE GAME ========== */
+.tube-pop {
+    position: fixed; pointer-events: none; z-index: 200;
+    width: 60px; height: 60px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(251,191,36,0.9), rgba(139,92,246,0.6), transparent 70%);
+    animation: popBurst 0.5s ease-out forwards;
+    transform: translate(-50%, -50%);
+}
+@keyframes popBurst { 0%{transform:translate(-50%,-50%) scale(0.3);opacity:1} 100%{transform:translate(-50%,-50%) scale(3);opacity:0} }
+
+.score-float {
+    position: fixed; pointer-events: none; z-index: 201;
+    font-family: 'Manrope', sans-serif; font-size: 1.4rem; font-weight: 800;
+    color: #fbbf24; text-shadow: 0 0 10px rgba(251,191,36,0.8), 0 2px 4px rgba(0,0,0,0.5);
+    animation: floatUp 1s ease-out forwards;
+    transform: translate(-50%, -50%);
+}
+@keyframes floatUp { 0%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)} 100%{opacity:0;transform:translate(-50%,-50%) translateY(-80px) scale(1.5)} }
+
+.game-hud {
+    position: fixed; bottom: 20px; right: 20px; z-index: 50;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-radius: 16px; padding: 10px 18px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: default; pointer-events: auto;
+    transition: transform 0.2s, box-shadow 0.2s, background 0.4s;
+}
+body.dark .game-hud {
+    background: rgba(22, 28, 60, 0.9);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+body.light .game-hud {
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.game-hud:hover { transform: scale(1.05); }
+.game-hud .hud-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #6d28d9, #7c3aed); box-shadow: 0 2px 8px rgba(109,40,217,0.4); }
+.game-hud .hud-icon svg { width: 18px; height: 18px; color: #fff; }
+body.light .game-hud .hud-icon { background: linear-gradient(135deg, #7c3aed, #8b5cf6); }
+.game-hud .hud-info { display: flex; flex-direction: column; }
+.game-hud .hud-score { font-size: 1.15rem; font-weight: 800; line-height: 1.1; }
+body.dark .game-hud .hud-score { color: #fbbf24; }
+body.light .game-hud .hud-score { color: #d97706; }
+.game-hud .hud-label { font-size: 0.65rem; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.06em; }
+.game-hud.bump { animation: hudBump 0.3s ease; }
+@keyframes hudBump { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+.hud-reset {
+    width: 28px; height: 28px; border: none; cursor: pointer;
+    background: rgba(255,255,255,0.06); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s; margin-left: 2px; padding: 0;
+}
+.hud-reset svg { width: 14px; height: 14px; color: var(--t3); transition: color 0.2s, transform 0.3s; }
+.hud-reset:hover { background: rgba(248,113,113,0.15); }
+.hud-reset:hover svg { color: #f87171; transform: rotate(-360deg); }
+body.light .hud-reset:hover { background: rgba(248,113,113,0.1); }
+
+/* ========== FOOTER GLARE ========== */
+.ft-brand {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    background: linear-gradient(90deg, var(--t3), #a78bfa, #c084fc, #a78bfa, var(--t3));
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: ftShine 4s ease-in-out infinite;
+    position: relative;
+}
+body.light .ft-brand {
+    background: linear-gradient(90deg, #5b21b6, #7c3aed, #a78bfa, #7c3aed, #5b21b6);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+@keyframes ftShine { 0%{background-position:100% 0} 100%{background-position:-100% 0} }
+
+.runner-top, .runner-bottom { width: 90px; height: 28px; }
+.runner-top::after, .runner-bottom::after { width: 30px; height: 14px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.runner-top { top: 6px; left: -150px; animation: run-top 10s linear infinite; }
+.runner-bottom { bottom: 6px; right: -150px; animation: run-bottom 10s linear infinite 5s; transform: rotate(180deg); }
+
+.runner-right, .runner-left { width: 28px; height: 90px; background-image: linear-gradient(180deg, transparent 15%, #0044ff 15%, #0044ff 25%, transparent 25%, transparent 75%, #0044ff 75%, #0044ff 85%, transparent 85%); }
+.runner-right::after, .runner-left::after { width: 14px; height: 30px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.runner-right { top: -150px; right: 6px; animation: run-right 10s linear infinite 2.5s; }
+.runner-left { bottom: -150px; left: 6px; animation: run-left 10s linear infinite 7.5s; transform: rotate(180deg); }
+
+@keyframes run-top { 0% { left: -10%; } 100% { left: 110%; } }
+@keyframes run-right { 0% { top: -10%; } 100% { top: 110%; } }
+@keyframes run-bottom { 0% { right: -10%; } 100% { right: 110%; } }
+@keyframes run-left { 0% { bottom: -10%; } 100% { bottom: 110%; } }
+
+/* ========== HEADER ========== */
+.hdr {
+    padding: 30px 32px;
+    background: rgba(88, 28, 135, 0.4); 
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 18px;
+    display: flex; justify-content: center; align-items: center;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.3);
+    transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+body.light .hdr {
+    background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 10px 30px rgba(91, 33, 182, 0.3);
+}
+
+.hdr::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.15) 0%, transparent 60%);
+    pointer-events: none; animation: shimmer 8s infinite linear;
+}
+@keyframes shimmer { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.hdr h1 {
+    font-size: clamp(0.9rem, 2.5vw, 2rem); 
+    white-space: nowrap; 
+    font-weight: 800; 
+    letter-spacing: 0.05em;
+    text-transform: uppercase; 
+    text-align: center; 
+    line-height: 1.2;
+    position: relative; 
+    z-index: 2;
+    background: linear-gradient(to bottom, #ffffff 0%, #e9d5ff 50%, #c084fc 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 15px rgba(88, 28, 135, 0.6);
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.2));
+}
+
+body.light .hdr h1 {
+    text-shadow: 0 2px 15px rgba(0,0,0,0.4);
+    background: linear-gradient(to bottom, #ffffff 20%, #e9d5ff 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+
+/* ========== SEARCH BAR ========== */
+.srch{display:flex;gap:10px;align-items:center;padding:12px 20px;background:var(--card);backdrop-filter:blur(30px);border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 12px var(--glow);transition:border-color .25s,box-shadow .25s,background 0.4s}
+.srch:focus-within{border-color:rgba(99,102,241,.4);box-shadow:0 0 0 3px rgba(99,102,241,.1),0 4px 20px var(--glow)}
+.srch svg.si{color:var(--t3);flex-shrink:0;transition:color .2s}
+.srch:focus-within svg.si{color:#818cf8}
+#si{flex:1;border:none;outline:none;background:none;font-family:inherit;font-size:1rem;font-weight:500;color:var(--t1)}
+#si::placeholder{color:var(--t3)}
+
+/* Search Bar Tint for Light Mode */
+body.light .srch {
+    background: #ffffff;
+    border: 2px solid rgba(124, 58, 237, 0.3);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1), inset 0 1px 3px rgba(0,0,0,0.05);
+}
+body.light .srch:focus-within {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.15);
+}
+body.light .srch svg.si { color: #6d28d9; }
+
+/* Embossed buttons */
+.ib{width:44px;height:44px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;overflow:hidden}
+.ib svg{width:18px;height:18px;position:relative;z-index:2}
+.ib span{font-size:0.9rem;font-weight:700;z-index:2}
+body.dark .ib{background:linear-gradient(145deg,#1e2450,#161c3c);color:#8b8eff;box-shadow:4px 4px 10px rgba(0,0,0,.4),-3px -3px 8px rgba(60,70,120,.15),inset 0 1px 0 rgba(255,255,255,.06)}
+body.dark .ib:hover{box-shadow:4px 4px 12px rgba(0,0,0,.5),-3px -3px 10px rgba(60,70,120,.2),inset 0 1px 0 rgba(255,255,255,.1);color:#a5b4fc}
+body.light .ib{background:linear-gradient(145deg,#fff,#e8e6f0);color:#6d28d9;box-shadow:4px 4px 10px rgba(0,0,0,.06),-3px -3px 8px rgba(255,255,255,.8),inset 0 1px 0 rgba(255,255,255,.9)}
+body.light .ib:hover{box-shadow:4px 4px 12px rgba(0,0,0,.08),-3px -3px 10px rgba(255,255,255,.9);color:#4c1d95}
+.ib.ton{color:#34d399 !important}.ib.mon{color:#f87171 !important;animation:mp 1.4s infinite}
+@keyframes mp{0%{box-shadow:0 0 0 0 rgba(248,113,113,.2)}70%{box-shadow:0 0 0 8px rgba(248,113,113,0)}100%{box-shadow:0 0 0 0 rgba(248,113,113,0)}}
+.mc{font-size:.78rem;font-weight:700;color:#818cf8;background:rgba(129,140,248,.1);padding:4px 12px;border-radius:16px;border:1px solid rgba(129,140,248,.15);white-space:nowrap;opacity:0;transition:opacity .2s}
+.mc.v{opacity:1}
+
+/* Select Box */
+.l-sel{appearance:none;border:none;font-family:inherit;font-size:0.85rem;font-weight:700;padding:0 34px 0 16px;height:44px;border-radius:12px;cursor:pointer;outline:none;transition:all 0.3s ease}
+body.dark .l-sel{background:linear-gradient(145deg,rgba(30,36,80,0.9),rgba(22,28,60,0.9));color:#a5b4fc;border:1px solid rgba(129,140,248,0.2);box-shadow:4px 4px 10px rgba(0,0,0,0.4),-3px -3px 8px rgba(60,70,120,0.12),inset 0 1px 0 rgba(255,255,255,0.06),0 0 12px rgba(129,140,248,0.08)}
+body.dark .l-sel:hover{border-color:rgba(129,140,248,0.4);box-shadow:4px 4px 12px rgba(0,0,0,0.5),-3px -3px 10px rgba(60,70,120,0.18),inset 0 1px 0 rgba(255,255,255,0.1),0 0 20px rgba(129,140,248,0.15);color:#c4b5fd}
+body.dark .l-sel:focus{border-color:rgba(139,142,255,0.5);box-shadow:0 0 0 3px rgba(129,140,248,0.15),0 0 20px rgba(129,140,248,0.12)}
+body.light .l-sel{background:linear-gradient(145deg,#fff,#f0ecf9);color:#5b21b6;border:1px solid rgba(124,58,237,0.2);box-shadow:4px 4px 10px rgba(0,0,0,0.06),-3px -3px 8px rgba(255,255,255,0.8),inset 0 1px 0 rgba(255,255,255,0.9),0 0 12px rgba(124,58,237,0.06)}
+body.light .l-sel:hover{border-color:rgba(124,58,237,0.4);box-shadow:4px 4px 12px rgba(0,0,0,0.08),-3px -3px 10px rgba(255,255,255,0.9),0 0 20px rgba(124,58,237,0.12);color:#4c1d95}
+body.light .l-sel:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,0.15),0 0 20px rgba(124,58,237,0.1)}
+.sel-wrap{position:relative}
+.sel-wrap::after{content:'';position:absolute;right:14px;top:50%;transform:translateY(-50%);border:5px solid transparent;border-top-color:var(--t3);pointer-events:none;transition:border-top-color 0.2s}
+.sel-wrap:hover::after{border-top-color:#818cf8}
+body.light .sel-wrap:hover::after{border-top-color:#7c3aed}
+
+/* ========== TABS ========== */
+.tbs{display:flex;gap:4px;padding:5px;background:var(--card);backdrop-filter:blur(30px);border:1px solid var(--border);border-radius:14px;box-shadow:0 2px 12px var(--glow);overflow-x:auto;scrollbar-width:none; transition: background 0.4s;}
+.tbs::-webkit-scrollbar{display:none}
+.tb{padding:9px 18px;border:none;font-family:inherit;font-size:.85rem;font-weight:600;border-radius:10px;cursor:pointer;transition:all .25s;white-space:nowrap;position:relative;overflow:hidden}
+body.dark .tb{background:linear-gradient(145deg,#1a2040,#141830);color:var(--t3);box-shadow:3px 3px 8px rgba(0,0,0,.3),-2px -2px 6px rgba(50,60,100,.1),inset 0 1px 0 rgba(255,255,255,.04)}
+body.dark .tb:hover{color:#c4b5fd;box-shadow:3px 3px 10px rgba(0,0,0,.4),-2px -2px 8px rgba(50,60,100,.15)}
+
+body.light .tbs { background: rgba(255, 255, 255, 0.6); border-color: rgba(124, 58, 237, 0.15); }
+body.light .tb{ background: rgba(124, 58, 237, 0.05); color: #5b21b6; border: 1px solid rgba(124, 58, 237, 0.05); }
+body.light .tb:hover{ background: rgba(124, 58, 237, 0.15); color: #4c1d95; box-shadow: 0 2px 5px rgba(124, 58, 237, 0.1); }
+
+.tb.on{background:linear-gradient(135deg,#6d28d9,#7c3aed) !important;color:#fff !important;box-shadow:0 3px 12px rgba(109,40,217,.35),inset 0 1px 0 rgba(255,255,255,.15) !important}
+.tb.on::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);pointer-events:none;border-radius:10px 10px 0 0}
+
+/* ========== TABLE ========== */
+.tc{flex:1;background:var(--card);backdrop-filter:blur(30px);border:1px solid var(--border);border-radius:18px;box-shadow:0 4px 24px var(--glow);overflow:hidden;display:flex;flex-direction:column;min-height:0;position:relative; z-index: 20;}
+.tc::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);z-index:5}
+.sc{flex:1;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(129,140,248,.15) transparent}
+.sc::-webkit-scrollbar{width:5px}.sc::-webkit-scrollbar-thumb{background:rgba(129,140,248,.15);border-radius:3px}
+table{width:100%;border-collapse:collapse}
+thead{position:sticky;top:0;z-index:10}
+body.dark thead{background:rgba(14,18,40,.95)}body.light thead{background:rgba(248,247,255,.95)}
+thead tr{border-bottom:1.5px solid var(--border)}
+th{text-align:center;padding:14px 20px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--th);white-space:nowrap}
+td{text-align:center;padding:12px 20px;font-size:.9rem;font-weight:500;color:var(--t2);border-bottom:1px solid var(--border);vertical-align:middle;position:relative}
+tbody tr{transition:background .15s}
+tbody tr:hover td{filter:brightness(1.08)}
+tbody tr.fl{animation:rf .7s ease}
+@keyframes rf{0%{background:rgba(129,140,248,.15)}100%{background:transparent}}
+
+/* ========== FLOOR ROW COLORS (dark) ========== */
+body.dark tr[data-t="17"] td{background:rgba(96,165,250,.1);border-left-color:rgba(96,165,250,.6)}
+body.dark tr[data-t="16"] td{background:rgba(129,140,248,.1);border-left-color:rgba(129,140,248,.6)}
+body.dark tr[data-t="15"] td{background:rgba(248,113,113,.08);border-left-color:rgba(248,113,113,.6)}
+body.dark tr[data-t="14"] td{background:rgba(251,146,60,.08);border-left-color:rgba(251,146,60,.6)}
+body.dark tr[data-t="13"] td{background:rgba(52,211,153,.08);border-left-color:rgba(52,211,153,.6)}
+body.dark tr[data-t="12"] td{background:rgba(74,222,128,.08);border-left-color:rgba(74,222,128,.6)}
+body.dark tr[data-t="9"] td{background:rgba(250,204,21,.07);border-left-color:rgba(250,204,21,.5)}
+body.dark tr[data-t="8"] td{background:rgba(244,114,182,.08);border-left-color:rgba(244,114,182,.6)}
+body.dark tr[data-t="7"] td{background:rgba(167,139,250,.1);border-left-color:rgba(167,139,250,.6)}
+body.dark tr[data-t="6"] td{background:rgba(56,189,248,.08);border-left-color:rgba(56,189,248,.6)}
+body.dark tr[data-t="5"] td{background:rgba(45,212,191,.08);border-left-color:rgba(45,212,191,.6)}
+body.dark tr[data-t="4"] td{background:rgba(251,191,36,.07);border-left-color:rgba(251,191,36,.5)}
+body.dark tr[data-t="3"] td{background:rgba(96,165,250,.08);border-left-color:rgba(96,165,250,.5)}
+body.dark tr[data-t="2"] td{background:rgba(192,132,252,.08);border-left-color:rgba(192,132,252,.5)}
+body.dark tr[data-t="er"] td{background:rgba(239,68,68,.08);border-left-color:rgba(239,68,68,.5)}
+body.dark tr[data-t="wish"] td{background:rgba(234,179,8,.07);border-left-color:rgba(234,179,8,.5)}
+body.dark tr[data-t="rja"] td{background:rgba(16,185,129,.08);border-left-color:rgba(16,185,129,.5)}
+body.dark tr[data-t="misc"] td{background:rgba(148,163,184,.06);border-left-color:rgba(148,163,184,.4)}
+
+/* ========== FLOOR ROW COLORS (light) ========== */
+body.light tr[data-t="17"] td{background:#dbeafe}
+body.light tr[data-t="16"] td{background:#e0e7ff}
+body.light tr[data-t="15"] td{background:#fee2e2}
+body.light tr[data-t="14"] td{background:#ffedd5}
+body.light tr[data-t="13"] td{background:#d1fae5}
+body.light tr[data-t="12"] td{background:#dcfce7}
+body.light tr[data-t="9"] td{background:#fef9c3}
+body.light tr[data-t="8"] td{background:#fce7f3}
+body.light tr[data-t="7"] td{background:#ede9fe}
+body.light tr[data-t="6"] td{background:#e0f2fe}
+body.light tr[data-t="5"] td{background:#ccfbf1}
+body.light tr[data-t="4"] td{background:#fef3c7}
+body.light tr[data-t="3"] td{background:#dbeafe}
+body.light tr[data-t="2"] td{background:#f3e8ff}
+body.light tr[data-t="er"] td{background:#fecaca}
+body.light tr[data-t="wish"] td{background:#fef08a}
+body.light tr[data-t="rja"] td{background:#a7f3d0}
+body.light tr[data-t="misc"] td{background:#e2e8f0}
+
+/* Glare on rows */
+td::after{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);pointer-events:none}
+body.dark td::after{background:linear-gradient(180deg,rgba(255,255,255,.04),transparent)}
+
+/* Left stripe */
+tbody td:first-child{border-left:3px solid transparent}
+tr[data-t="17"] td:first-child{border-left-color:#60a5fa !important}
+tr[data-t="16"] td:first-child{border-left-color:#818cf8 !important}
+tr[data-t="15"] td:first-child{border-left-color:#f87171 !important}
+tr[data-t="14"] td:first-child{border-left-color:#fb923c !important}
+tr[data-t="13"] td:first-child{border-left-color:#34d399 !important}
+tr[data-t="12"] td:first-child{border-left-color:#4ade80 !important}
+tr[data-t="9"] td:first-child{border-left-color:#facc15 !important}
+tr[data-t="8"] td:first-child{border-left-color:#f472b6 !important}
+tr[data-t="7"] td:first-child{border-left-color:#a78bfa !important}
+tr[data-t="6"] td:first-child{border-left-color:#38bdf8 !important}
+tr[data-t="5"] td:first-child{border-left-color:#2dd4bf !important}
+tr[data-t="4"] td:first-child{border-left-color:#fbbf24 !important}
+tr[data-t="3"] td:first-child{border-left-color:#60a5fa !important}
+tr[data-t="2"] td:first-child{border-left-color:#c084fc !important}
+tr[data-t="er"] td:first-child{border-left-color:#ef4444 !important}
+tr[data-t="wish"] td:first-child{border-left-color:#eab308 !important}
+tr[data-t="rja"] td:first-child{border-left-color:#10b981 !important}
+tr[data-t="misc"] td:first-child{border-left-color:#94a3b8 !important}
+
+/* Badges */
+.b{display:inline-flex;align-items:center;justify-content:center;padding:3px 10px;border-radius:6px;font-size:.8rem;font-weight:700;min-width:34px;text-align:center;position:relative;overflow:hidden}
+.b::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.2),transparent);pointer-events:none}
+.bf{background:linear-gradient(135deg,#6d28d9,#7c3aed);color:#fff;box-shadow:0 2px 6px rgba(109,40,217,.3)}
+.ber{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;box-shadow:0 2px 6px rgba(220,38,38,.3)}
+
+/* TUBE STATION ID STYLE (POP) */
+.bs {
+    background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.4));
+    color: #a5b4fc;
+    border: 1px solid rgba(165, 180, 252, 0.5);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    text-shadow: 0 0 5px rgba(255,255,255,0.4);
+    backdrop-filter: blur(2px);
+}
+body.light .bs {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: #4338ca;
+    border: 1px solid #818cf8;
+    box-shadow: 0 2px 5px rgba(99, 102, 241, 0.25);
+    text-shadow: none;
+}
+
+.bm{background:rgba(148,163,184,.1);color:var(--t3);border:1.5px solid rgba(148,163,184,.15)}
+.brj{background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 2px 6px rgba(5,150,105,.3)}
+.bw{background:linear-gradient(135deg,#b45309,#d97706);color:#fff;box-shadow:0 2px 6px rgba(180,83,9,.3)}
+
+.ft{padding:12px 20px;display:flex;justify-content:space-between;align-items:center;font-size:.85rem;color:var(--t3);border-top:1px solid var(--border);font-weight:500}
+.em{display:none;text-align:center;padding:50px 20px;color:var(--t3)}.em.v{display:block}.em p{font-size:.95rem;font-weight:500}
+
+/* Toast */
+.tst{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(14px);padding:12px 24px;border-radius:14px;font-size:1rem;font-weight:700;color:#818cf8;opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);z-index:100;pointer-events:none;display:flex;align-items:center;gap:8px;backdrop-filter:blur(20px)}
+body.dark .tst{background:rgba(22,28,60,.9);border:1px solid rgba(129,140,248,.2);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+body.light .tst{background:rgba(255,255,255,.9);border:1px solid rgba(109,40,217,.15);box-shadow:0 8px 30px rgba(0,0,0,.08)}
+.tst.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.tst svg{width:18px;height:18px;color:#34d399}
+
+/* Top Buttons */
+.top-btns{position:fixed;top:20px;right:20px;z-index:50;display:flex;gap:10px;align-items:center}
+
+@media(max-width:768px){.shell{padding:10px;gap:8px}.hdr{padding:16px;flex-wrap:wrap}.hdr h1{font-size:1.2rem}.tube-wrap{display:none}th,td{padding:10px 12px;font-size:.82rem}.tb{padding:7px 14px;font-size:.8rem}}
+
+/* ========== CLICK RIPPLE (hidden until activated) ========== */
+.click-ripple {
+    position: fixed; pointer-events: none; z-index: 199;
+    border-radius: 50%; border: 2px solid rgba(139,92,246,0.6);
+    animation: rippleOut 0.6s ease-out forwards;
+    transform: translate(-50%,-50%);
+}
+@keyframes rippleOut {
+    0% { width:0;height:0;opacity:0.8; }
+    100% { width:120px;height:120px;opacity:0; }
+}
+.click-ripple.r2 { border-color: rgba(99,102,241,0.4); animation-delay: 0.1s; animation-duration: 0.8s; }
+
+/* ========== CONFETTI (Konami) ========== */
+.confetti-piece {
+    position: fixed; pointer-events: none; z-index: 300;
+    width: 8px; height: 14px; border-radius: 2px;
+    animation: confettiFall linear forwards;
+}
+@keyframes confettiFall {
+    0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg) scale(0.4); opacity: 0; }
+}
+.firework {
+    position: fixed; pointer-events: none; z-index: 300;
+    width: 6px; height: 6px; border-radius: 50%;
+    animation: fwBurst 0.8s ease-out forwards;
+}
+@keyframes fwBurst {
+    0% { transform: translate(0,0) scale(1); opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* ========== RACE MODE TIMER ========== */
+.race-hud {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    z-index: 250; pointer-events: none;
+    background: rgba(22,28,60,0.95); backdrop-filter: blur(24px);
+    border: 1px solid rgba(251,191,36,0.4);
+    border-radius: 20px; padding: 24px 36px;
+    display: none; flex-direction: column; align-items: center; gap: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+body.light .race-hud {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(124,58,237,0.4);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+}
+.race-hud.active { display: flex; animation: raceIn 0.4s ease-out; }
+@keyframes raceIn { 0%{transform:translate(-50%,-50%) scale(0.7);opacity:0} 100%{transform:translate(-50%,-50%) scale(1);opacity:1} }
+.race-hud .race-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #fbbf24; }
+body.light .race-hud .race-title { color: #d97706; }
+.race-hud .race-timer { font-size: 2.5rem; font-weight: 800; color: var(--t1); line-height: 1; font-variant-numeric: tabular-nums; }
+.race-hud .race-count { font-size: 1rem; font-weight: 700; color: #818cf8; }
+.race-hud .race-result { font-size: 1.2rem; font-weight: 800; color: #34d399; display: none; }
+.race-hud .race-result.won { color: #fbbf24; }
+.race-hud .race-result.lost { color: #f87171; }
+
+/* ========== ACHIEVEMENT BADGES ========== */
+.badge-popup {
+    position: fixed; top: 80px; right: 20px; z-index: 250;
+    background: rgba(22,28,60,0.95); backdrop-filter: blur(20px);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 16px; padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    animation: badgeSlide 0.5s cubic-bezier(.16,1,.3,1) forwards, badgeFade 0.5s ease 3.5s forwards;
+    transform: translateX(120%);
+}
+body.light .badge-popup {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(124,58,237,0.3);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+}
+@keyframes badgeSlide { 0%{transform:translateX(120%)} 100%{transform:translateX(0)} }
+@keyframes badgeFade { 0%{opacity:1;transform:translateX(0)} 100%{opacity:0;transform:translateX(120%)} }
+.badge-popup .badge-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 10px rgba(251,191,36,0.4);
+    flex-shrink: 0;
+}
+.badge-popup .badge-icon svg { width: 20px; height: 20px; color: #fff; }
+.badge-popup .badge-text { display: flex; flex-direction: column; }
+.badge-popup .badge-label { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #fbbf24; }
+body.light .badge-popup .badge-label { color: #d97706; }
+.badge-popup .badge-name { font-size: 0.95rem; font-weight: 800; color: var(--t1); }
+</style>
+</head>
+<body class="dark">
+<div class="page-border">
+    <div class="carrier runner-top"></div>
+    <div class="carrier runner-right"></div>
+    <div class="carrier runner-bottom"></div>
+    <div class="carrier runner-left"></div>
+</div>
+
+<div class="bg-mesh"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+<div class="top-btns">
+    <div class="sel-wrap">
+        <select class="l-sel" id="langSel" onchange="setLang(this.value)">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+        </select>
+    </div>
+    <button class="ib" id="thm" onclick="toggleTheme()" title="Toggle light/dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+</div>
+<div class="tst" id="tst"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg><span id="tstT"></span></div>
+<div class="race-hud" id="raceHud">
+    <div class="race-title">TUBE RACE</div>
+    <div class="race-timer" id="raceTimer">30</div>
+    <div class="race-count" id="raceCount">0 / 10</div>
+    <div class="race-result" id="raceResult"></div>
+</div>
+<div class="game-hud" id="gameHud" title="Click the moving tubes to score!">
+    <div class="hud-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <div class="hud-info"><div class="hud-score" id="tubeScore">0</div><div class="hud-label">Tubes caught</div></div>
+    <button class="hud-reset" id="hudReset" onclick="resetScore()" title="Reset score"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+</div>
+<div class="shell">
+<div class="hdr">
+    <h1 id="hTitle">Parkland Health Tube Station Numbers and Nursing Station Phone List</h1>
+</div>
+<div class="srch">
+    <svg class="si" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="si" placeholder="Search floor, bed, tube station, or department…" onkeyup="flt(false)">
+    <span class="mc" id="mc"></span>
+    <button class="ib ton" id="tBtn" onclick="tTTS()" title="Toggle voice readout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
+    <button class="ib" id="mBtn" onclick="mic()" title="Voice search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+</div>
+<div class="tbs">
+    <button class="tb on" onclick="go('all',this)" data-l="All">All</button>
+    <button class="tb" onclick="go('17',this)" data-l="17">Floor 17</button>
+    <button class="tb" onclick="go('16',this)" data-l="16">Floor 16</button>
+    <button class="tb" onclick="go('15',this)" data-l="15">Floor 15</button>
+    <button class="tb" onclick="go('14',this)" data-l="14">Floor 14</button>
+    <button class="tb" onclick="go('13',this)" data-l="13">Floor 13</button>
+    <button class="tb" onclick="go('12',this)" data-l="12">Floor 12</button>
+    <button class="tb" onclick="go('9',this)" data-l="9">Floor 9</button>
+    <button class="tb" onclick="go('8',this)" data-l="8">Floor 8</button>
+    <button class="tb" onclick="go('7',this)" data-l="7">Floor 7</button>
+    <button class="tb" onclick="go('6',this)" data-l="6">Floor 6</button>
+    <button class="tb" onclick="go('5',this)" data-l="5">Floor 5</button>
+    <button class="tb" onclick="go('4',this)" data-l="4">Floor 4</button>
+    <button class="tb" onclick="go('3',this)" data-l="3">Floor 3</button>
+    <button class="tb" onclick="go('2',this)" data-l="2">Floor 2</button>
+    <button class="tb" onclick="go('er',this)" data-l="ER">ER</button>
+    <button class="tb" onclick="go('wish',this)" data-l="WISH">WISH</button>
+    <button class="tb" onclick="go('rja',this)" data-l="RJA">RJA</button>
+    <button class="tb" onclick="go('misc',this)" data-l="Misc">Misc</button>
+</div>
+<div class="tc"><div class="sc"><table id="dt"><thead><tr><th id="thF">Floor</th><th id="thB">Room / Range</th><th id="thT">Tube Station</th><th id="thP">Phone</th><th id="thM">Med Room</th><th id="thL">Label Name</th><th id="thS">Station Name</th></tr></thead><tbody id="tb"></tbody></table></div><div class="em" id="emp"><p id="noRes">No matching stations found.</p></div><div class="ft"><span class="ft-brand">Parkland Health &middot; Care. Compassion. Community.</span><span id="tot"></span></div></div>
+</div>
+<script>
+var DATA=[
+["17","17","401-408","177","79730","17-455","Seventeen Med Secure","Psych 17 B 79730"],
+["17","17","409-415, 423-437","178","79606","17-471","Seventeen Psych Inpatient","Psych 17 A"],
+["17","17","602-608, 631-635","176","79634","17-650","Seventeen Med/Surg/PMR","Rehab 17 C"],
+["17","17","609-614, 625-630","176","—","17-668","Seventeen Med/Surg/PMR","Rehab 17 C"],
+["17","17","Gym","175","79668","—","PMR Gym","Rehab Hall 17 D"],
+["16","16","401-412, 426-437","168","79158","16-451","Sixteen Neurology","Neuro Surg 16 B"],
+["16","16","413-418, 420-425","169","79240","16-467","Sixteen Epilepsy","EMU 16 A"],
+["16","16","601-609, 630-637","167","79152","16-650","Sixteen PCU","Surgical/Neuro PCU 16 C"],
+["16","16","610-618, 16-624 (CT), 626-629","166","79152","16-668","Sixteen PCU","Surgical/Neuro PCU 16 D"],
+["16","16","—","165","79271","—","—","Neuro Sat Pharm"],
+["15","15","401-412, 426-437","158","74351","15-451","Fifteen SICU/CVICU","CV/SI One-Specialty ICU 15 B"],
+["15","15","413-418, 420-425","159","74351","15-467","Fifteen NSICU","NS ICU-Neuro ICU 15 A"],
+["15","15","602-609-629-637","157","26142/75269","15-650","Fifteen Med ICU","MICU 15 C"],
+["15","15","610-618, 620-628","156","76757/76459","15-668","Fifteen Med ICU","MICU 15 D"],
+["14","14","Dialysis 1-18","148","78125","—","Fourteen Dialysis","Dialysis 14 B/A"],
+["14","14","401-414, 424-437","147","78146","14-451","Fourteen Med Spec","Hematology/Oncology 14 B"],
+["14","14","601-606, 632-637","146","27915","14-650","Fourteen Med/Surg","14 Med/Surg 14 C"],
+["14","14","607-612, 624-631","145","27915","14-668","Fourteen Med/Surg","14 Med/Surg 14 C"],
+["13","13","401-409, 429-437","137","77708","13-451","Thirteen Hosp A","Med Hospitalist 13 B"],
+["13","13","410-418, 420-428","138","77697","13-467","Thirteen Hosp A","Med Hospitalist 13 A"],
+["13","13","601-609, 629-637","136","77672","13-650","Thirteen Hosp B","Med Hospitalist 13 C"],
+["13","13","610-618, 620-628","135","77672","13-668","Thirteen Hosp B","Med Hospitalist 13 D"],
+["12","12","401-409, 429-437","127","77233","12-451","Twelve Gen Med","Medicine 12 B"],
+["12","12","410-418, 420-428","128","77236","12-467","Twelve Gen Med","Isolation Unit 12 A"],
+["12","12","601-609, 629-637","126","77198","12-650","Twelve Hosp Med","Medicine 12 C"],
+["12","12","610-618, 620-628","125","77201","12-668","Twelve Hosp Med","Medicine 12 D"],
+["9","9","405-410, 428-438 (438 has 1-7 beds)","790","76707","09-451","Nine Observation","ER Observation 9 F"],
+["9","9","411-417, 420-427","890","76707","09-477","Nine Observation","ER Observation 9 B"],
+["9","9","601-609, 9PMR 629-637","574","75776","09-650","Nine Ortho","Ortho 9A"],
+["9","9","610-618, 620-625, 9PMR 626-628","190","76681","09-668","Nine Ortho","Ortho 9B"],
+["8","8","142-143","627","—","—","Newborn","NBCU 8 F"],
+["8","8","401-410, 429-438","780","76255","08-449","Eight Med/Surg","Gyn Oncology 8 F"],
+["8","8","411-417, 420-428","880","76255","08-474","Eight Med/Surg","Gyn Oncology 8 B"],
+["8","8","601-609, 629-637","280","76188","08-650","Eight Gen Surg","Gen Surg 8 C"],
+["8","8","610-618, 620-628","561","76188","08-668","Eight Gen Surg","Gen Surg 8 D"],
+["7","7","102-111, 128-137","970","75684","07-158","Mother Baby MFM","Post Partum N. 7 J"],
+["7","7","112-119, 120-127","971","75684","07-180","Mother Baby MFM","Post Partum S. 7 J"],
+["7","7","142-143","626","75880","","Mother Baby MFM","NBCU 7 F"],
+["7","7","401-410, 429-438","770","75632","07-449","Seven Antepartum","Ante Partum 7 F"],
+["7","7","411-417, 420-428","870","75632","07-474","Seven Antepartum","Ante Partum 7 B"],
+["7","7","601-608, 630-637","270","75535","07-650","Seven Hospitalist","Surg/Trauma 7 C"],
+["7","7","609-618, 620-629","170","75560","07-668","Seven Hospitalist","Surg/Trauma 7 D"],
+["6","6","102-111, 128-137","960","74942","06-158","Six Mother Baby B","Post Partum N. 6 J"],
+["6","6","112-119, 120-128","961","74942","06-180","Six Mother Baby B","Post Partum S. 6 J"],
+["6","6","142-143","625","75147","—","Newborn","NBCU 6 F"],
+["6","6","401-410, 429-438","624","75127","06-449","Six Mother Baby A","Post Partum 6 F"],
+["6","6","411-417, 420-428","860","75127","06-474","Six Mother Baby A","Post Partum 6 B"],
+["6","6","601-609, 629-631","573","75000","06-650","Six BACU/Six BUCC","Acute Burn 6 C"],
+["6","6","610-618, 620-628","160","75000","06-668","Six BACU/Six Burn ICU","Acute Burn 6 D"],
+["5","5","601-612, 629-637","584","74341","05-650","Five Med PCU","5 MPCU 5 C"],
+["5","5","613-618, 620-628","583","74342","05-668","Five Med PCU","5 MPCU 5 D"],
+["4","4","All beds NNICU to stn 414","414","73742","","Four NICU","NNICU Deer/Rabbit 4 B"],
+["4","4","All beds NNICU to stn 414","414","73733","","Four NICU","NNICU Bear/Bird 4 F"],
+["4","4","All beds NNICU to stn 414","414","73721","","Four NICU","NNICU Duck/Dragon 4 F"],
+["4","4","All beds NNICU to stn 414","414","73730","","Four NICU","NNICU Fish/Frog 4 B"],
+["4","4","—","415","74027","","—","NNICU Sat Pharm"],
+["3","3","303-323","320","72917","","Three LD-LDR","L&D Rms. 1-25 3 E"],
+["3","3","340-362","319","72632","","Three LD-LDR","L&D Rms. 26-48 3 A"],
+["3","3","377, 380-388","318","72612","","C Section 3 A","C Section 3 A"],
+["3","3","03-471.01 thru 03-471.08, 476-481, 465.01-465.10","317","72917","","L&D Porre ECU/Prep/Recovery 3 B","ECU/Prep/Recovery 3 B"],
+["3","3","408-410, 428-432, 422, 424-425, 415-421","321","72758","","Three LD Triage","L&D Triage 3 F"],
+["3","3","—","316","72828","","O.R. Sat Pharm","O.R. Sat Pharm"],
+["3","3","A01-A05, 463.04-463.10","315","72812","","O.R. A Core 3 B","O.R. A Core 3 B"],
+["3","3","B07-B10, 527-533","314","72816","","O.R. B Core 3 C","O.R. B Core 3 C"],
+["3","3","564.01-564.09, 565, 554-558, 560.01-560.08, 553.01-553.08, 549.01-549.09, 03-547","313","72843","","O.R. Prep/Recovery 3 C PACU","O.R. Prep/Recovery 3 C"],
+["3","3","C14-C20, 606-611","312","—","","O.R. C Core 3 D","O.R. C Core 3 D"],
+["3","3","TCU 21-23, TCU 25-27, TCU 86-92","311","72778","","Tactical Care Unit (TCU)","D Pod"],
+["2","2","—","211","71841","","IV Clean Rm Pharmacy","IV Clean Rm Pharmacy"],
+["2","2","2IMREC Prep Recov beds 20-40","217","71511","","Two Imaging Prep Recovery","Share/Prep Recov 20-40"],
+["2","2","2IMREC Prep Recov beds 1-19","218","71992","","Two Imaging Prep Recovery","Share/Prep Recov 1-19"],
+["2","2","AHU beds 1-7","217","214-266-0000","","Admission Holding Unit","AHU 1-7"],
+["2","2","","218","71992","","Rad ACH, IR Radproc",""],
+["2","2","","218","76982","","2MAU (Mobile Admission Unit)",""],
+["2","2","","219","79940","","Card Cath","Card Cath Lab"],
+["2","2","","","76981","","GI Lab",""],
+["2","2","","219","79940","","2nd Floor Cardiac Cath Lab",""],
+["2","2","Lab-to send wrong tubes","690","—","","Lab (Wrong Tubes)",""],
+["ER","er","A1-A12","559","70496","","ED Main Pod A","ER Pod A Zone 1"],
+["ER","er","B1-B12","119","70498","","ED Main Pod B","ER Pod B Zone 2"],
+["ER","er","C1-C12, 374-377, 379-382, 384, X01-X20","117","70472","","ED Main Pod C/Pod X","ER Pod C Zone 3"],
+["ER","er","D1-D12","116","70475","","ED Main Pod D","ER Pod D Zone 4"],
+["ER","er","E1-E12","115","70438","","ED Main Pod E","ER Pod E Zone 5"],
+["ER","er","G1-G12","118","70469","","ED Main Pod G","ER Pod G Zone 6"],
+["ER","er","H1-H10, C/D RM-01, C/D RM-02, RM-02, Q01-Q20, S00/Trop-CH","122","70465","","ED Main Pod H/Pod Q","ER Pod H/Q Zone 7"],
+["ER","er","J1-J14","560","70486","","ED Main Pod J","ER Pod J Zone 8"],
+["ER","er","K01-K14, KCH","124","70483","","ED Main Pod K","ER Pod K Zone 9"],
+["ER","er","L1-L6","114","70433","","ED Main Pod L","Critical Care Pod L"],
+["ER","er","Y01-Y12","114","78062, 77649","","ED Main Pod Y","ER Pod Y"],
+["ER","er","Z01-Z50","114","77765, 78050","","ED Main Pod Z","ER Pod Z"],
+["ER","er","M1-M8, M-Hall 9-12","113","70365","","ED Main Pod M","ER Trauma Pod M"],
+["ER","er","R1-R4, R6-R9, R13 (Del to Pod J Bins)","560","70566","","ED Obs (Observation)","ER Pod J Zone 8"],
+["ER","er","R5, R10-R12, R14-R20, R-CH, R-STR, OGES Consult CH A & CH B","129","70560","","ED-OGES (ED-OB/GYN Emergency Services)","OB ICC Pod R"],
+["ER","er","S01-S02, OGES S01-OGES S02, OGES S-CH1-S-CH20","129","70332/70333","","ED Pod S","ER Pod S"],
+["ER","er","EOU01-EOU28, EOUWR, T01-T28","557","71960","","Psych Extended Obs Unit Pod T","Psych Extended Obs Unit Pod T"],
+["ER","er","521, 521.01-521.06, Pedint, Pedmse, Pedeval","558","70585","","ED Dayroom","Psych ER"],
+["ER","er","—","130","70628","","ED Sat Pharm","ED Sat Pharm"],
+["ER","er","—","120","70628","","ED Sat Pharm","ED Sat Pharm"],
+["ER","er","—","910","26329","","OPC Pharmacy","OPC Pharmacy"],
+["4W","wish","WISH Clinic OB Ultrasound","404","73145","","OB Sono/Ultra Sound","OB Sono/Ultra Sound"],
+["3W","wish","WISH Clinic-OB Comp/MFM Clinic","304","72357","","OB Comp Clinic","OB Clinic"],
+["2W","wish","WISH Clinic GYN Clinic","566","71357","","Gyn Clinic","Gyn Clinic"],
+["1W","wish","WISH Clinic Lactation F/U","554","—","","WISH/Lactation F/U Clinic","WISH/Lactation F/U Clinic"],
+["1W","wish","UCEC B12-B23, C24-C27, C29-C33","106","70872","","Urgent Care Emergency Center (UCEC/UCC/UCED)","UCC"],
+["RJA","rja","1st Point of Care","825","69103","","MRI Prep/Recovery","MRI Prep/Recovery"],
+["RJA","rja","Discharge Pharmacy","826","7-1830","","Discharge Pharmacy",""],
+["RJA","rja","1st Pharmacy Drug Fill","827","6-9090","","1st Pharmacy Drug Fill",""],
+["RJA","rja","2nd Point of Care","831","6-9192","","Radiology","Radiology"],
+["RJA","rja","RJA 2nd Lab Label and Prep","832","","","RJA Lab",""],
+["RJA","rja","RJA 2nd Lab Label and Prep","833","","","RJA Lab",""],
+["RJA","rja","3rd Point of Care West","835","6-9385, 6-9404","","Surg Spec","Surg Spec"],
+["RJA","rja","3rd Work Chart","836","6-9300","","ENT Outpatient","ENT Outpatient"],
+["RJA","rja","4th Point of Care North","838","6-9634","","Cardiology","Cardiology"],
+["RJA","rja","4th Point of Care West","839","6-9549","","Pre-Anesthesia","Pre-Anesthesia"],
+["RJA","rja","4th Point of Care Core","840","6-9491","","Urology","Urology"],
+["RJA","rja","5th Point of Care West","841","6-9799, 6-9824","","Neurology","Neurology"],
+["RJA","rja","5th Point of Care East","842","6-9689","","Med Spec","Med Spec"],
+["Misc","misc","Lab Tubes #690","690","","","Lab (Wrong Tubes)",""],
+["Misc","misc","","","","","Outpt Discharge: 71830","IPAC RPh: 71871"],
+["Misc","misc","","","","","Lab Central: 29500 / Engineering: 71000","Med Rec Team"],
+["Misc","misc","","","","","Stat Code: #1234 / WISH RPh: 71826","IV Room: 71941"],
+["Misc","misc","","","","","Pyxis Optimization: 214-786-6474","COVID Clinic: 214-266-9787"],
+["Misc","misc","","","","","ED Pharmacy: 70623",""],
+["Misc","misc","","","","","Surgery/Medicine MN (IV Room): 71845",""]
+];
+
+var tts=true,ttm=null,tab='all',isDark=true;
+var curLang='en';
+
+var LANG={
+    en:{
+        t:'Parkland Health Tube Station Numbers and Nursing Station Phone List',
+        ph:'Search floor, bed, tube station, or department…',
+        th:['Floor','Room / Range','Tube Station','Phone','Med Room','Label Name','Station Name'],
+        nr:'No matching stations found.',
+        ts:'Tube Station',
+        m:'matches',
+        m1:'match',
+        fl:'Floor'
+    },
+    es:{
+        t:'Lista de Teléfonos y Estaciones Tubulares Parkland',
+        ph:'Buscar piso, cama, estación o departamento…',
+        th:['Piso','Cama / Rango','Estación Tubular','Teléfono','Cuarto Med','Nombre Etiqueta','Nombre Estación'],
+        nr:'No se encontraron estaciones coincidentes.',
+        ts:'Estación Tubular',
+        m:'coincidencias',
+        m1:'coincidencia',
+        fl:'Piso'
+    }
+};
+
+function toggleTheme(){
+    isDark=!isDark;
+    document.body.className=isDark?'dark':'light';
+    var b=document.getElementById('thm');
+    b.innerHTML=isDark
+        ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>'
+        :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+}
+
+function setLang(l){
+    curLang=l;
+    var L=LANG[curLang];
+    
+    // Update Texts
+    document.getElementById('hTitle').textContent=L.t;
+    document.getElementById('si').placeholder=L.ph;
+    document.getElementById('noRes').textContent=L.nr;
+    
+    var ths=['thF','thB','thT','thP','thM','thL','thS'];
+    ths.forEach(function(id,i){document.getElementById(id).textContent=L.th[i]});
+
+    // Update Tabs
+    document.querySelectorAll('.tb').forEach(function(btn){
+        var original=btn.getAttribute('data-l');
+        // Only translate floors, keep ER/WISH/Misc unless manual override desired
+        if(!isNaN(original)) btn.textContent=L.fl+' '+original;
+        else if(original==='All') btn.textContent=(curLang==='es'?'Todos':'All');
+        else btn.textContent=original;
+    });
+
+    flt(true); // Re-run search logic to update counts
+}
+
+function bc(f){if(f==='ER')return'ber';if(f==='Misc')return'bm';if(f==='RJA')return'brj';if(f.includes('W'))return'bw';return'bf'}
+function bld(){var t=document.getElementById('tb'),h='';for(var i=0;i<DATA.length;i++){var d=DATA[i];h+='<tr data-f="'+d[0]+'" data-t="'+d[1]+'"><td><span class="b '+bc(d[0])+'">'+d[0]+'</span></td><td>'+d[2]+'</td><td>'+(d[3]?'<span class="b bs">'+d[3]+'</span>':'')+'</td><td>'+d[4]+'</td><td>'+d[5]+'</td><td>'+d[6]+'</td><td>'+d[7]+'</td></tr>';}t.innerHTML=h;document.getElementById('tot').textContent=DATA.length+' stations'}
+function go(t,b){tab=t;document.querySelectorAll('.tb').forEach(function(x){x.classList.remove('on')});b.classList.add('on');document.getElementById('si').value='';flt(false)}
+function tTTS(){tts=!tts;var b=document.getElementById('tBtn');b.classList.toggle('ton',tts);b.innerHTML=tts?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'}
+
+// Improved Speech Function with Multi-language support
+function spk(t){
+    window.speechSynthesis.cancel();
+    var m=new SpeechSynthesisUtterance(t);
+    var voices=window.speechSynthesis.getVoices();
+    var v=null;
+    
+    // Select Voice based on Language
+    if(curLang==='es'){
+        v=voices.find(function(x){return (x.lang.includes('es-MX')||x.lang.includes('es-ES'))&&(x.name.includes('Google')||x.name.includes('Microsoft'))});
+    }
+    
+    // General fallback to English premium
+    if(!v) v=voices.find(function(x){return x.lang.includes('en-US') && (x.name.includes('Google')||x.name.includes('Samantha'))});
+
+    if(v) m.voice=v;
+    
+    var lMap={'en':'en-US','es':'es-MX'};
+    m.lang = lMap[curLang] || 'en-US';
+
+    m.rate=0.9; 
+    m.pitch=1;
+    window.speechSynthesis.speak(m);
+}
+
+function tst(t){var e=document.getElementById('tst');document.getElementById('tstT').textContent=t;e.classList.add('show');clearTimeout(window._tw);window._tw=setTimeout(function(){e.classList.remove('show')},2800)}
+
+// Modified Announce Function
+function ann(id){
+    if(!tts||!id)return;
+    var txt = id.trim().split('').join(' '); // Separate digits
+    var L=LANG[curLang];
+    // Speak
+    spk(L.ts + ' ' + txt);
+    // Toast
+    tst(L.ts.replace('Station Pneumatique','Station').replace('Estación Tubular','Estación') + ' ' + id);
+}
+
+function flt(vc){
+    var ci=document.getElementById("si").value.toUpperCase().trim();
+    ci=ci.replace(/\bSATELLITE\b/g,"SAT").replace(/\bDIALYSIS FOR\b/g,"DIALYSIS 4");
+
+    if(/^\d{3,5}$/.test(ci)){ 
+        var f2=parseInt(ci.substring(0,2));
+        if(f2>=10&&f2<=17){ci=ci.substring(0,2)+' '+ci.substring(2)}
+        else{var f1=parseInt(ci.substring(0,1));if(f1>=2&&f1<=9){ci=ci.substring(0,1)+' '+ci.substring(1)}}
+    }
+    var mm=ci.match(/^(\d+)([A-Z]+)(\d+)?$/);if(mm)ci=mm[1]+' '+mm[2]+(mm[3]?' '+mm[3]:'');
+    else{var fb=ci.match(/^(\d+)([A-Z]\d+)$/);if(fb)ci=fb[1]+' '+fb[2]}
+    var ac=null,an=null,am=ci.match(/^([A-Z])\s*(\d+)$/);if(am){ac=am[1];an=parseInt(am[2])}
+    var terms=ci.split(/\s+/),rows=document.querySelectorAll("#dt tbody tr"),mc=0,lt='';
+    var floorTerm=null;if(terms.length>=1&&!isNaN(terms[0])){var fn=parseInt(terms[0]);if(fn>=2&&fn<=17)floorTerm=terms[0]}
+
+    for(var i=0;i<rows.length;i++){
+        var r=rows[i],td=r.getElementsByTagName("td"),rt=r.getAttribute("data-t"),rf=r.getAttribute("data-f");
+        var rB=td[1].innerText.toUpperCase(),rN=(td[5].innerText+' '+td[6].innerText).toUpperCase(),rT=td[2].innerText;
+        // EXCLUDED PHONE COLUMN (td[3]) FROM SEARCH
+        var rA=(rf+' '+rB+' '+rN+' '+td[4].innerText).toUpperCase();
+        var ok=false;
+        if(tab!=='all'&&rt!==tab){r.style.display='none';continue}
+        if(!ci)ok=true;
+        else if(ac!==null){var rx=new RegExp(ac+'(\\d+)\\s*-\\s*'+ac+'?(\\d+)','i');var m=rB.match(rx);if(m&&an>=parseInt(m[1])&&an<=parseInt(m[2]))ok=true}
+        else{
+            var ps=true;
+            for(var t=0;t<terms.length;t++){
+                var tm=terms[t],h=false;
+                if(t===0&&floorTerm!==null){if(rf===tm)h=true}
+                else if(floorTerm!==null&&!isNaN(tm)){if(chk(rB,parseInt(tm)))h=true}
+                else if(/^[A-Z]+$/.test(tm)){if(new RegExp('\\b'+tm+'\\b').test(rA))h=true}
+                else if(!isNaN(tm)){if(chk(rB,parseInt(tm)))h=true;else if(rA.indexOf(tm)>-1)h=true}
+                else{if(rA.indexOf(tm)>-1)h=true}
+                if(!h){ps=false;break}
+            }
+            if(ps)ok=true;
+        }
+        r.classList.remove('fl');
+        if(ok){r.style.display='';mc++;lt=rT}else r.style.display='none';
+    }
+    
+    var mE=document.getElementById('mc');
+    var L=LANG[curLang];
+    if(ci){
+        mE.textContent=mc+' '+(mc!==1 ? L.m : L.m1);
+        mE.classList.add('v')
+    }else mE.classList.remove('v');
+
+    document.getElementById('emp').classList.toggle('v',mc===0&&ci.length>0);
+    if(mc===1&&ci.length>0){clearTimeout(ttm);ttm=setTimeout(function(){ann(lt);document.querySelectorAll("#dt tbody tr").forEach(function(r){if(r.style.display!=='none')r.classList.add('fl')})},vc?0:800)}
+}
+
+function chk(t,n){
+    var r=/(\d+)\s*-\s*(\d+)/g,m;
+    while((m=r.exec(t))!==null){
+        var s=parseInt(m[1]),e=parseInt(m[2]);
+        // FIX: Ignore large gaps (room numbers vs ranges)
+        if((e-s)>200) continue;
+        if(n>=s&&n<=e)return true;
+    }
+    return t.indexOf(n.toString())>-1;
+}
+
+// === TUBE CATCHING GAME ===
+var tubeScore = 0;
+var streakCount = 0;
+var lastCatchTime = 0;
+
+// === ACHIEVEMENT SYSTEM (hidden, triggered by gameplay) ===
+var earnedBadges = {};
+var badgeQueue = [];
+var showingBadge = false;
+
+var BADGES = {
+    firstCatch: { name: 'First Catch', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' },
+    speedDemon: { name: 'Speed Demon', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>' },
+    nightOwl: { name: 'Night Owl', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>' },
+    dayShift: { name: 'Day Shift', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>' },
+    tenClub: { name: '10 Club', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>' },
+    comboKing: { name: 'Combo King', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' },
+    raceWinner: { name: 'Race Champion', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>' },
+    konamiMaster: { name: 'Secret Code', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' },
+    century: { name: 'Century', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/></svg>' }
+};
+
+function awardBadge(key) {
+    if (earnedBadges[key]) return;
+    earnedBadges[key] = true;
+    badgeQueue.push(key);
+    processNextBadge();
+}
+
+function processNextBadge() {
+    if (showingBadge || badgeQueue.length === 0) return;
+    showingBadge = true;
+    var key = badgeQueue.shift();
+    var b = BADGES[key];
+    var el = document.createElement('div');
+    el.className = 'badge-popup';
+    el.innerHTML = '<div class="badge-icon">' + b.icon + '</div><div class="badge-text"><div class="badge-label">Achievement Unlocked</div><div class="badge-name">' + b.name + '</div></div>';
+    document.body.appendChild(el);
+    setTimeout(function() { el.remove(); showingBadge = false; processNextBadge(); }, 4200);
+}
+
+// === CLICK RIPPLE SYSTEM (hidden until first tube catch activates it) ===
+var ripplesActive = false;
+
+function enableRipples() {
+    if (ripplesActive) return;
+    ripplesActive = true;
+    document.addEventListener('pointerdown', function(e) {
+        if (!ripplesActive) return;
+        var r1 = document.createElement('div');
+        r1.className = 'click-ripple';
+        r1.style.left = e.clientX + 'px';
+        r1.style.top = e.clientY + 'px';
+        document.body.appendChild(r1);
+        var r2 = document.createElement('div');
+        r2.className = 'click-ripple r2';
+        r2.style.left = e.clientX + 'px';
+        r2.style.top = e.clientY + 'px';
+        document.body.appendChild(r2);
+        setTimeout(function() { r1.remove(); r2.remove(); }, 900);
+    });
+}
+
+// === KONAMI CODE (↑↑↓↓←→←→) ===
+var konamiSeq = [38,38,40,40,37,39,37,39];
+var konamiPos = 0;
+
+document.addEventListener('keydown', function(e) {
+    if (e.keyCode === konamiSeq[konamiPos]) {
+        konamiPos++;
+        if (konamiPos === konamiSeq.length) {
+            konamiPos = 0;
+            triggerKonami();
+        }
+    } else {
+        konamiPos = 0;
+    }
+});
+
+function triggerKonami() {
+    awardBadge('konamiMaster');
+    tst('SECRET CODE ACTIVATED!');
+    // Confetti burst
+    var colors = ['#fbbf24','#818cf8','#f87171','#34d399','#c084fc','#38bdf8','#fb923c','#a78bfa'];
+    for (var i = 0; i < 80; i++) {
+        (function(i) {
+            setTimeout(function() {
+                var c = document.createElement('div');
+                c.className = 'confetti-piece';
+                c.style.left = (Math.random() * 100) + 'vw';
+                c.style.top = '-20px';
+                c.style.background = colors[Math.floor(Math.random() * colors.length)];
+                c.style.animationDuration = (2 + Math.random() * 2) + 's';
+                c.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+                c.style.width = (6 + Math.random() * 6) + 'px';
+                c.style.height = (10 + Math.random() * 8) + 'px';
+                document.body.appendChild(c);
+                setTimeout(function() { c.remove(); }, 4500);
+            }, i * 25);
+        })(i);
+    }
+    // Fireworks after confetti
+    setTimeout(function() { launchFirework(30, 30); }, 600);
+    setTimeout(function() { launchFirework(70, 25); }, 1200);
+    setTimeout(function() { launchFirework(50, 20); }, 1800);
+}
+
+function launchFirework(xPct, yPct) {
+    var colors = ['#fbbf24','#f87171','#818cf8','#34d399','#c084fc','#38bdf8'];
+    var cx = (xPct / 100) * window.innerWidth;
+    var cy = (yPct / 100) * window.innerHeight;
+    for (var i = 0; i < 24; i++) {
+        var spark = document.createElement('div');
+        spark.className = 'firework';
+        spark.style.left = cx + 'px';
+        spark.style.top = cy + 'px';
+        spark.style.background = colors[Math.floor(Math.random() * colors.length)];
+        var angle = (i / 24) * Math.PI * 2;
+        var dist = 60 + Math.random() * 80;
+        var tx = Math.cos(angle) * dist;
+        var ty = Math.sin(angle) * dist;
+        spark.style.animation = 'none';
+        spark.style.transition = 'all 0.8s cubic-bezier(.16,1,.3,1)';
+        spark.style.boxShadow = '0 0 6px ' + spark.style.background;
+        document.body.appendChild(spark);
+        (function(s, tx, ty) {
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    s.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(0.2)';
+                    s.style.opacity = '0';
+                });
+            });
+            setTimeout(function() { s.remove(); }, 1000);
+        })(spark, tx, ty);
+    }
+}
+
+// === RACE MODE (Triple-click the score HUD to start) ===
+var raceActive = false;
+var raceCatches = 0;
+var raceTarget = 10;
+var raceTimeLeft = 30;
+var raceInterval = null;
+var hudClickCount = 0;
+var hudClickTimer = null;
+
+document.getElementById('gameHud').addEventListener('click', function() {
+    hudClickCount++;
+    clearTimeout(hudClickTimer);
+    hudClickTimer = setTimeout(function() { hudClickCount = 0; }, 500);
+    if (hudClickCount >= 3) {
+        hudClickCount = 0;
+        if (!raceActive) startRace();
+    }
+});
+
+function startRace() {
+    raceActive = true;
+    raceCatches = 0;
+    raceTimeLeft = 30;
+    var hud = document.getElementById('raceHud');
+    var timer = document.getElementById('raceTimer');
+    var count = document.getElementById('raceCount');
+    var result = document.getElementById('raceResult');
+    result.style.display = 'none';
+    result.className = 'race-result';
+    hud.classList.add('active');
+    timer.textContent = '30';
+    count.textContent = '0 / ' + raceTarget;
+    tst('RACE MODE! Catch 10 tubes in 30 seconds!');
+
+    // Speed up tubes
+    document.querySelectorAll('.carrier').forEach(function(t) {
+        t.style.animationDuration = '4s';
+    });
+
+    raceInterval = setInterval(function() {
+        raceTimeLeft--;
+        timer.textContent = raceTimeLeft;
+        if (raceTimeLeft <= 5) timer.style.color = '#f87171';
+        if (raceTimeLeft <= 0) {
+            endRace(false);
+        }
+    }, 1000);
+}
+
+function raceScore() {
+    if (!raceActive) return;
+    raceCatches++;
+    document.getElementById('raceCount').textContent = raceCatches + ' / ' + raceTarget;
+    if (raceCatches >= raceTarget) {
+        endRace(true);
+    }
+}
+
+function endRace(won) {
+    raceActive = false;
+    clearInterval(raceInterval);
+    var result = document.getElementById('raceResult');
+    var timer = document.getElementById('raceTimer');
+    timer.style.color = '';
+    result.style.display = 'block';
+
+    // Reset tube speeds
+    document.querySelectorAll('.carrier').forEach(function(t) {
+        t.style.animationDuration = '';
+    });
+
+    if (won) {
+        result.textContent = 'YOU WIN!';
+        result.className = 'race-result won';
+        awardBadge('raceWinner');
+        tst('Race complete! You caught them all!');
+        triggerKonami(); // Bonus celebration
+    } else {
+        result.textContent = 'TIME UP — ' + raceCatches + '/' + raceTarget;
+        result.className = 'race-result lost';
+        tst('Time\'s up! You got ' + raceCatches + ' out of ' + raceTarget);
+    }
+
+    setTimeout(function() {
+        document.getElementById('raceHud').classList.remove('active');
+    }, 3000);
+}
+
+// === RESET SCORE ===
+function resetScore() {
+    tubeScore = 0;
+    streakCount = 0;
+    lastCatchTime = 0;
+    document.getElementById('tubeScore').textContent = '0';
+    var hud = document.getElementById('gameHud');
+    hud.classList.remove('bump');
+    void hud.offsetWidth;
+    hud.classList.add('bump');
+    tst('Score reset!');
+}
+
+// === INIT TUBE GAME ===
+function initTubeGame() {
+    document.querySelectorAll('.carrier').forEach(function(tube) {
+        tube.addEventListener('pointerdown', function(e) {
+            e.stopPropagation();
+            catchTube(this, e.clientX, e.clientY);
+        });
+    });
+}
+
+function catchTube(tube, x, y) {
+    var now = Date.now();
+    if (now - lastCatchTime < 3000) { streakCount++; } else { streakCount = 1; }
+    lastCatchTime = now;
+
+    var points = streakCount >= 5 ? 5 : streakCount >= 3 ? 3 : 1;
+    tubeScore += points;
+
+    // Activate ripples on first catch
+    if (tubeScore === points) enableRipples();
+
+    // Update HUD
+    document.getElementById('tubeScore').textContent = tubeScore;
+    var hud = document.getElementById('gameHud');
+    hud.classList.remove('bump');
+    void hud.offsetWidth;
+    hud.classList.add('bump');
+
+    // Warp speed on tube
+    tube.classList.add('warp-speed');
+    setTimeout(function() { tube.classList.remove('warp-speed'); }, 2000);
+
+    // Explosion
+    var pop = document.createElement('div');
+    pop.className = 'tube-pop';
+    pop.style.left = x + 'px';
+    pop.style.top = y + 'px';
+    document.body.appendChild(pop);
+    setTimeout(function() { pop.remove(); }, 500);
+
+    // Float score
+    var ft = document.createElement('div');
+    ft.className = 'score-float';
+    var msg = '+' + points;
+    if (streakCount >= 5) msg += ' COMBO!';
+    else if (streakCount >= 3) msg += ' Streak!';
+    ft.textContent = msg;
+    ft.style.left = x + 'px';
+    ft.style.top = y + 'px';
+    document.body.appendChild(ft);
+    setTimeout(function() { ft.remove(); }, 1000);
+
+    // Race mode scoring
+    if (raceActive) raceScore();
+
+    // === ACHIEVEMENTS ===
+    // First Catch
+    if (tubeScore >= 1) awardBadge('firstCatch');
+    // Speed Demon (5x streak)
+    if (streakCount >= 5) awardBadge('speedDemon');
+    // Combo King (streak of 7+)
+    if (streakCount >= 7) awardBadge('comboKing');
+    // 10 Club
+    if (tubeScore >= 10) awardBadge('tenClub');
+    // Century
+    if (tubeScore >= 100) awardBadge('century');
+    // Night Owl (dark mode catch)
+    if (document.body.classList.contains('dark')) awardBadge('nightOwl');
+    // Day Shift (light mode catch)
+    if (document.body.classList.contains('light')) awardBadge('dayShift');
+
+    // Milestone toasts
+    if (tubeScore === 10) tst('10 tubes caught! Nice reflexes!');
+    else if (tubeScore === 25) tst('25 tubes! Pneumatic pro!');
+    else if (tubeScore === 50) tst('50 tubes! Tube Station Legend!');
+    else if (tubeScore === 100) tst('100 tubes! Unstoppable!');
+}
+
+initTubeGame();
+
+function mic(){var S=window.SpeechRecognition||window.webkitSpeechRecognition;if(S){var r=new S();
+    // Set mic language
+    var lMap={'en':'en-US','es':'es-MX','vi':'vi-VN','fr':'fr-FR','ko':'ko-KR','zh':'zh-CN','ig':'en-NG'};
+    r.lang = lMap[curLang] || 'en-US';
+    var b=document.getElementById('mBtn');b.classList.add('mon');r.onresult=function(e){document.getElementById('si').value=e.results[0][0].transcript.replace(/\.$/,'');flt(true);b.classList.remove('mon')};r.onerror=r.onend=function(){b.classList.remove('mon')};r.start()}else alert('Speech recognition not supported.')}
+
+window.speechSynthesis.onvoiceschanged = function() {window.speechSynthesis.getVoices();};
+
+bld();flt(false);
+</script>
+</body>
+</html>
